@@ -251,10 +251,12 @@ if [ $nic_n -gt 0 ]; then
 		if [ ${qemu_nics_config[$ni]} ] && [ ${qemu_nics_config[$ni]} != "-" ]; then
 			host_nic_config=${qemu_nics_config[$ni]}
 		else
-			host_nic_config="tap,script=$DATADIR/start_script,downscript=$DATADIR/stop_script"
 			if [ $nic_model = "virtio" ]; then
-				host_nic_config="$host_nic_config,vnet_hdr=no"
+				vnet_hdr="vnet_hdr=no"
+			else
+				vnet_hdr=""
 			fi
+			host_nic_config="tap,script=$DATADIR/start_script,downscript=$DATADIR/stop_script,$vnet_hdr"
 		fi
 
 		nic_macaddr="AA:BB:CC:DD:EE:0$(($ni + 2))"
@@ -335,19 +337,19 @@ USB_DEV=" " read -a qemu_usb_config <<< "$AUTOQEMU_USB_CONFIG"
 
 usb_lines=""
 usb_n=${#qemu_usb[*]}
-if [ $usb_n -gt 0 ]; then
+#if [ $usb_n -gt 0 ]; then
 
-	for so in "${!qemu_usb[@]}"; do
-		usb_model=${USB2QEMU[${qemu_usb[$so]}]}
-		hci_id=${USB2QEMUID[${qemu_usb[$so]}]}
-		echo
-		if [ ! $usb_model ]; then
-			error "usb model ${qemu_usb[$ni]} is not supported"
-		else
-			usb_lines="$usb_lines -device $usb_model,id=$hci_id"
-		fi
-	done
-fi
+#	for so in "${!qemu_usb[@]}"; do
+#		usb_model=${USB2QEMU[${qemu_usb[$so]}]}
+#		hci_id=${USB2QEMUID[${qemu_usb[$so]}]}
+#		echo
+#		if [ ! $usb_model ]; then
+#			error "usb model ${qemu_usb[$ni]} is not supported"
+#		else
+#			usb_lines="$usb_lines -device $usb_model,id=$hci_id"
+#		fi
+#	done
+#fi
 #############################################
 # END USB
 #############################################
@@ -401,7 +403,7 @@ if [[ `id -u` -ne 0 ]] ; then
 	RUNAS="-runas `whoami`"
 fi
 
-ARG_LINE="$sudo $QEMU $RUNAS $AUTOQEMU_MACHINE $AUTOQEMU_LOAD_ARG $AUTOQEMU_KVM_ARG -m $AUTOQEMU_MEM $usb_lines $nic_lines $sound_lines $graphic_lines $@"
+ARG_LINE="$sudo $QEMU $RUNAS $AUTOQEMU_MACHINE $AUTOQEMU_LOAD_ARG $AUTOQEMU_KVM_ARG -m $AUTOQEMU_MEM $sound_lines $graphic_lines -usb $@"
 
 info "$ARG_LINE"
 $ARG_LINE
