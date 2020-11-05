@@ -171,8 +171,17 @@ static module perror {
 	source "perror.c"
 }
 
-static module scanf {
+static module scanf_without_file {
+	option number fscanf_support = 0
+
 	source "scanf.c"
+}
+
+static module scanf {
+	option number fscanf_support = 1
+
+	source "scanf.c"
+	source "fscanf.c"
 
 	depends file_ops /* ungetc() */
 }

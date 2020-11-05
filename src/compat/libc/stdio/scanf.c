@@ -13,9 +13,8 @@
 #include <stdarg.h>
 #include <ctype.h>
 #include <stdbool.h>
-#include <fs/file_operation.h>
 
-FILE *file;
+#include <framework/mod/options.h>
 
 /*TODO: throw out.*/
 /**
@@ -60,27 +59,35 @@ static void unscanchar(const char **str, int ch, int *pc_ptr) {
 	}
 	if ((uintptr_t) str >= 2) {
 		(*str) --;
-	} else if ((uintptr_t) str == 1) {
-		ungetc(ch, file);
+	}
+#if OPTION_GET(NUMBER, fscanf_support)
+	else if ((uintptr_t) str == 1) {
+		extern FILE *__fscanf_file;
+		ungetc(ch, __fscanf_file);
 	} else {
 		ungetc(ch, stdin);
 	}
+#endif
 }
 
 static int scanchar(const char **str, int *pc_ptr) {
 	extern int getchar(void);
-	int ch;
+	int ch = 0;
 	if ((uintptr_t)str >= 2) {
 		ch = **str;
 		(*str)++;
 		ch = (ch == '\0' ? EOF : ch);
-	} else if ((uintptr_t)str == 1) {
-		ch = getc(file);
+	}
+#if OPTION_GET(NUMBER, fscanf_support)
+	else if ((uintptr_t)str == 1) {
+		extern FILE *__fscanf_file;
+		ch = getc(__fscanf_file);
 	} else {
 		if ('\n' == (ch = getchar())) {
 			ch = EOF;
 		}
 	}
+#endif
 	if (ch != EOF) {
 		(*pc_ptr)++;
 	}
@@ -153,7 +160,7 @@ static int scan_int(const char **in, int base, int width, int *res, int *pc_ptr)
 #define OPS_LEN_PTRDIFF       0x00001000 /* ptrdiff_t (d, i, u, o, x, X); ptrdiff_t* (n) */
 #define OPS_LEN_LONGFP        0x00002000 /* long double (f, F, e, E, g, G, a, A) */
 
-static int scan(const char **in, const char *fmt, va_list args) {
+int stdio_scan(const char **in, const char *fmt, va_list args) {
 	int width;
 	int converted = 0;
 	int ops_len;
@@ -320,30 +327,18 @@ int scanf(const char *format, ...) {
 	int rv;
 
 	va_start(args, format);
-	rv = scan(0, format, args);
+	rv = stdio_scan(0, format, args);
 	va_end(args);
 
 	return rv;
 }
 
-int fscanf(FILE *stream, const char *format, ...) {
-	va_list args;
-	int rv;
-
-	file = stream;
-
-	va_start(args, format);
-	rv = scan((const char **)1, format, args);
-	va_end(args);
-
-	return rv;
-}
 int sscanf(const char *out, const char *format, ...) {
 	va_list args;
 	int rv;
 
 	va_start(args, format);
-	rv = scan(&out, format, args);
+	rv = stdio_scan(&out, format, args);
 	va_end (args);
 
 	return rv;
