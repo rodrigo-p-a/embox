@@ -38,7 +38,7 @@ static int efm32_gpio_setup_mode(unsigned char port, gpio_mask_t pins, int mode)
 	case GPIO_MODE_OUTPUT: {
 		bit_foreach(bit, pins) {
 			if (pins & (1 << bit)) {
-				GPIO_PinModeSet(port, 10, gpioModePushPull, BSP_LED_POLARITY ? 0 : 1);
+				GPIO_PinModeSet(port, bit, gpioModePushPull, BSP_LED_POLARITY ? 0 : 1);
 			}
 		}
 		break;
